@@ -21,6 +21,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "lsst/utils/Cache.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection/Psf.h"

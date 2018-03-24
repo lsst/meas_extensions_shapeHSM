@@ -21,13 +21,12 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "lsst/utils/Cache.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/math/Statistics.h"
-
 #include "lsst/afw/table/Source.h"
-#include "lsst/afw/detection/Psf.h"
 
 #include "galsim/Image.h"
 #include "galsim/hsm/PSFCorr.h"

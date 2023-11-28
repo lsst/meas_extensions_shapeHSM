@@ -30,10 +30,20 @@ from numpy import mgrid, sum
 PLUGIN_NAME = "ext_shapeHSM_HigherOrderMoments"
 
 class HigherOrderMomentsConfig(measBase.SingleFramePluginConfig):
-    order = Field[int](
-        doc="Order of moments to compute",
+    min_order = Field[int](
+        doc="Minimum order of moments to compute",
+        default=3,
+    )
+
+    max_order = Field[int](
+        doc="Maximum order of moments to compute",
         default=4,
     )
+
+    def validate(self):
+        if self.min_order > self.max_order:
+            raise ValueError("min_order must be less than or equal to max_order")
+        self.validate()
 
 
 @measBase.register(PLUGIN_NAME)
@@ -42,7 +52,7 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
 
     @classmethod
     def getExecutionOrder(cls):
-        return cls.SHAPE_ORDER
+        return cls.FLUX_ORDER
 
     def __init__(self, config, name, schema, metadata, logName=None):
         super().__init__(config, name, schema, metadata, logName=logName)
@@ -85,8 +95,8 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
             record.set(self.schema.join(self.name, suffix), M_pq)
 
     def getAllNames(self):
-        for (p, q) in self._get_pq_full(self.config.order):
-            if p + q > 2:
+        for (p, q) in self._get_pq_full(self.config.max_order):
+            if p + q >= self.config.min_order:
                 yield f"{p}{q}"
 
 

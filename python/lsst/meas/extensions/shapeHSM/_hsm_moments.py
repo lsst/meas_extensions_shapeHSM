@@ -395,9 +395,6 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
         if not psf:
             raise measBase.MeasurementError(self.NO_PSF.doc, self.NO_PSF.number)
 
-        # Get the bounding box of the PSF.
-        psfBBox = psf.computeImageBBox(center)
-
         # Two methods for getting PSF image evaluated at the source centroid:
         if self.config.useSourceCentroidOffset:
             # 1. Using `computeImage()` returns an image in the same coordinate
@@ -409,10 +406,17 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
             # retain any information about the original bounding box of the
             # PSF. We therefore reset the origin to be the same as the
             # pixelized image.
-            psfImage.setXY0(psfBBox.getMin())
+            center0 = Point2I(center)
+            xy0 = Point2I(center0.x + psfImage.getX0(),
+                          center0.y + psfImage.getY0()
+                          )
+            psfImage.setXY0(xy0)
 
         # Get the trace radius of the PSF.
         psfSigma = psf.computeShape(center).getTraceRadius()
+
+        # Get the bounding box of the PSF.
+        psfBBox = psfImage.getBBox()
 
         # Get the bounding box in the parent coordinate system.
         bbox = psfImage.getBBox(afwImage.PARENT)

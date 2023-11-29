@@ -575,7 +575,7 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
             # Get the variance image from the exposure and restrict to the
             # PSF bounding box.
             var = afwImage.Image(
-                afwImage.Image(exposure.getMaskedImage().getVariance(), dtype=psfImage.dtype, deep=True),
+                afwImage.Image(exposure.getMaskedImage().getVariance()[psfImage.getBBox()], dtype=psfImage.dtype, deep=True),
                 bbox=psfImage.getBBox(),
                 origin=afwImage.PARENT,
                 dtype=psfImage.dtype,

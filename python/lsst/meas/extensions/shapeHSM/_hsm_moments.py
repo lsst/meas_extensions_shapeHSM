@@ -44,6 +44,23 @@ __all__ = [
 ]
 
 
+def _quickGalsimImageView(array, bounds):
+    match array.dtype:
+       case np.float64:
+           gcls = galsim._galsim.ImageViewD
+       case np.float32:
+           gcls = galsim._galsim.ImageViewF
+       case np.int32:
+           gcls = galsim._galsim.ImageViewI
+
+    return gcls(
+        array.__array_interface__["data"][0],
+        array.strides[1]//array.itemsize,
+        array.strides[0]//array.itemsize,
+        bounds._b,
+    )
+
+
 class HsmMomentsConfig(measBase.SingleFramePluginConfig):
     """Base configuration for HSM adaptive moments measurement."""
 
@@ -91,9 +108,9 @@ class HsmMomentsPlugin(measBase.SingleFramePlugin):
         self,
         record: afwTable.SourceRecord,
         *,
+        # FIX TYPES
         image: galsim.Image,
-        weight: galsim.Image | None = None,
-        badpix: galsim.Image | None = None,
+        weight_image: galsim.Image | None = None,
         sigma: float = 5.0,
         precision: float = 1.0e-6,
         centroid: Point2D | None = None,
@@ -130,21 +147,25 @@ class HsmMomentsPlugin(measBase.SingleFramePlugin):
         """
         # Convert centroid to GalSim's PositionD type.
         guessCentroid = galsim.PositionD(centroid.x, centroid.y)
-
         try:
             # Attempt to compute HSM moments.
-            shape = galsim.hsm.FindAdaptiveMom(
+
+            # Use galsim c++/python interface directly.
+            shape = galsim.hsm.ShapeData()
+            hsmparams = galsim.hsm.HSMParams.default
+
+            galsim._galsim.FindAdaptiveMomView(
+                shape._data,
                 image,
-                weight=weight,
-                badpix=badpix,
-                guess_sig=sigma,
-                precision=precision,
-                guess_centroid=guessCentroid,
-                strict=True,
-                round_moments=self.config.roundMoments,
-                hsmparams=None,
+                weight_image,
+                float(sigma),
+                float(precision),
+                guessCentroid._p,
+                bool(self.config.roundMoments),
+                hsmparams._hsmp,
             )
-        except galsim.hsm.GalSimHSMError as error:
+
+        except RuntimeError as error:
             raise measBase.MeasurementError(str(error), self.GALSIM.number)
 
         # Retrieve computed moments sigma and centroid.
@@ -278,19 +299,20 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
         # Create a GalSim image using the extracted array.
         # NOTE: GalSim's HSM uses the FITS convention of 1,1 for the
         # lower-left corner.
-        image = galsim.Image(imageArray, bounds=bounds, copy=False)
+        _image = _quickGalsimImageView(imageArray, bounds)
 
         # Convert the mask of bad pixels to a format suitable for galsim.
-        # NOTE: galsim.Image will match whatever dtype the input array is
-        # (here int32).
-        badpix = galsim.Image(badpix, bounds=bounds, copy=False)
+        gd = (badpix == 0)
+        badpix[gd] = 1
+        badpix[~gd] = 0
+
+        _weight_image = _quickGalsimImageView(badpix, bounds)
 
         # Call the internal method to calculate adaptive moments using GalSim.
         self._calculate(
             record,
-            image=image,
-            weight=None,
-            badpix=badpix,
+            image=_image,
+            weight_image=_weight_image,
             sigma=2.5 * psfSigma,
             precision=1.0e-6,
             centroid=center,
@@ -430,7 +452,17 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
         imageArray = psfImage.array
 
         # Create a GalSim image using the PSF image array.
-        image = galsim.Image(imageArray, bounds=bounds, copy=False)
+        _image = _quickGalsimImageView(imageArray, bounds)
+
+        if badpix is not None:
+            gd = (badpix == 0)
+            badpix[gd] = 1
+            badpix[~gd] = 0
+
+            _weight_image = _quickGalsimImageView(badpix, bounds)
+        else:
+            arr = np.ones(imageArray.shape, dtype=np.int32)
+            _weight_image = _quickGalsimImageView(arr, bounds)
 
         # Decide on the centroid position based on configuration.
         if self.config.useSourceCentroidOffset:
@@ -444,9 +476,8 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
         # Call the internal method to calculate adaptive moments using GalSim.
         self._calculate(
             record,
-            image=image,
-            weight=None,
-            badpix=badpix,
+            image=_image,
+            weight_image=_weight_image,
             sigma=psfSigma,
             centroid=centroid,
         )
@@ -523,6 +554,7 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
         Returns
         -------
         badpix : `~galSim.Image`
+            FIXME
             Image representing bad pixels, where zero indicates good pixels and
             any nonzero value denotes a bad pixel.
 
@@ -597,6 +629,6 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
         # Convert the mask of bad pixels to a format suitable for galsim.
         # NOTE: galsim.Image will match whatever dtype the input array is
         # (here int32).
-        badpix = galsim.Image(badpix, bounds=bounds, copy=False)
+        # badpix = galsim.Image(badpix, bounds=bounds, copy=False)
 
         return badpix

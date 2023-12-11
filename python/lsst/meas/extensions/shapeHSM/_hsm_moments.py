@@ -80,12 +80,12 @@ class HsmMomentsPlugin(measBase.SingleFramePlugin):
 
         # Utilize a safe centroid extractor that uses the detection footprint
         # as a fallback if necessary.
-        self.centroidExtractor = measBase.SafeCentroidExtractor(schema, name)
+        self.centroidExtractor = measBase.SafeCentroidExtractor(schema, name, True)
         self.log = logging.getLogger(self.logName)
 
     @classmethod
     def getExecutionOrder(cls):
-        return cls.SHAPE_ORDER
+        return cls.CENTROID_ORDER
 
     def _calculate(
         self,

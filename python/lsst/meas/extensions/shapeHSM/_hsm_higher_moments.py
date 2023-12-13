@@ -25,23 +25,20 @@ __all__ = (
     "HigherOrderMomentsPSFPlugin",
 )
 
-import lsst.afw.image as afwImage
 import lsst.geom as geom
 import lsst.meas.base as measBase
 import numpy as np
 from lsst.pex.config import Field, FieldValidationError, ListField
 
-PLUGIN_NAME = "ext_shapeHSM_HigherOrderMoments"
-
 
 class HigherOrderMomentsConfig(measBase.SingleFramePluginConfig):
     min_order = Field[int](
-        doc="Minimum order of moments to compute",
+        doc="Minimum order of the higher order moments to compute",
         default=4,
     )
 
     max_order = Field[int](
-        doc="Maximum order of moments to compute",
+        doc="Maximum order of the higher order moments to compute",
         default=4,
     )
 
@@ -78,6 +75,8 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
         # Embed the flag definitions in the schema using a flag handler.
         self.flagHandler = measBase.FlagHandler.addFields(schema, name, flagDefs)
 
+        self.pqlist = self._get_pq_full()
+
     @classmethod
     def getExecutionOrder(cls):
         return cls.FLUX_ORDER
@@ -92,6 +91,14 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
                 yield f"{p}{q}"
 
     def _get_pq_full(self):
+        """Get a list of the orders to measure as a tuple.
+
+        Returns
+        -------
+        pqlist: `list` [`tuples`]
+            A list of tuples of the form (p, q) where p and q denote the order
+            in x and y direction.
+        """
         pq_list = []
 
         for n in range(self.config.min_order, self.config.max_order + 1):
@@ -104,46 +111,42 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
                 p += 1
                 q -= 1
                 pq_list.append((p, q))
+
         return pq_list
 
-    @staticmethod
-    def _get_suffix(p, q):
-        return f"{p}{q}"
-
-    def _calculate_higher_order_moments(
-        self, exposure, center, M, pqlist, badpix=None, setMaskedPixelsToZero=False
-    ):
+    def _calculate_higher_order_moments(self, mi, center, M, badpix=None, setMaskedPixelsToZero=False):
         """
-        image : galsim.Image
+        image : `~lsst.afw.image.Image`
             Image of the PSF
-        pqlist : list of tuples
-            Order of moments to measure
+        center: `~lsst.geom.Point2D`
+            First order moments of ``image``. This is used as the peak of the
+            Gaussian weight image.
+        M : `~numpy.ndarray`
+            A 2x2 numpy array representing the second order moments of
+            ``image``. This is used to generate the Gaussian weight image.
+        badpix : `~numpy.ndarray`
+            A 2D array having the same shape and orientation as ``image.array``
+            that denotes which pixels are bad and should not be accounted for
+            when computing the moments.
+        setMaskedPixelsToZero: `bool`
+            Whether to treat pixels corresponding to ``badpix`` should be set
+            to zero, or replaced by a scaled version of the weight image.
         """
 
         results_list = []
 
-        image_array = exposure.image.array
+        image_array = mi.array
 
         y, x = np.mgrid[: image_array.shape[0], : image_array.shape[1]]
-        y = +y
 
-        # detM = shape.getIxx()*shape.getIyy() - shape.getIxy()**2
-        # inv_M = np.array([[shape.getIyy(), -shape.getIxy()], [-shape.getIxy(), shape.getIxx()]])/detM
-
-        # M = np.zeros((2,2))
-        # M[0, 0] = record["ext_shapeHSM_HsmSourceMoments_xx"]
-        # M[1, 1] = record["ext_shapeHSM_HsmSourceMoments_yy"]
-        # M[0, 1] = M[1, 0] = record["ext_shapeHSM_HsmSourceMoments_xy"]
-        # print("AK", M)
         inv_M = np.linalg.inv(M)
 
-        # find the sqrt of inv_M
         evalues, evectors = np.linalg.eig(inv_M)
         # Ensuring square root matrix exists
 
         sqrt_inv_M = evectors * np.sqrt(evalues) @ np.linalg.inv(evectors)
 
-        bbox = exposure.getBBox()
+        bbox = mi.getBBox()
         pos = np.array([x - (center.getX() - bbox.getMinX()), y - (center.getY() - bbox.getMinY())])
 
         std_pos = np.einsum("ij,jqp->iqp", sqrt_inv_M, pos)
@@ -156,11 +159,11 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
                 image_array[badpix] = 0.0
             else:
                 image_array[badpix] = weight[badpix] * image_array[~badpix].sum() / weight[~badpix].sum()
-            # image_array[badpix] = 0.
+
         image_weight = weight * image_array
         normalization = np.sum(image_weight)
 
-        for p, q in pqlist:
+        for p, q in self.pqlist:
             this_moment = np.sum(std_x**p * std_y**q * image_weight) / normalization
             results_list.append(this_moment)
 
@@ -242,25 +245,21 @@ class HigherOrderMomentsSourcePlugin(HigherOrderMomentsPlugin):
         # get Galsim image from the image array
 
         # Measure all the moments together to save time
-        pqlist = self._get_pq_full()
         try:
             hm_measurement = self._calculate_higher_order_moments(
-                exposure[bbox],
+                exposure.image[bbox],
                 center,
                 M,
-                pqlist,
                 badpix.astype(bool),
                 setMaskedPixelsToZero=self.config.setMaskedPixelsToZero,
             )
-            # hm_measurement = self.calc_higher_moments_original(image, pqlist)n
         except Exception as e:
             raise measBase.MeasurementError(e)
 
         # Record the moments
         for i in range(len(hm_measurement)):
-            (p, q) = pqlist[i]
+            (p, q) = self.pqlist[i]
             M_pq = hm_measurement[i]
-            suffix = self._get_suffix(p, q)
             this_column_name = self.name + f"_{p}{q}"
 
             record.set(this_column_name, M_pq)
@@ -341,20 +340,16 @@ class HigherOrderMomentsPSFPlugin(HigherOrderMomentsPlugin):
             psfBBox = psfImage.getBBox()
             centroid = geom.Point2D(psfBBox.getMin() + psfBBox.getDimensions() // 2)
 
-        psfMaskedImage = afwImage.MaskedImageD(psfImage)
-
         # Measure all the moments together to save time
-        pqlist = self._get_pq_full()
         try:
-            hm_measurement = self._calculate_higher_order_moments(psfMaskedImage, centroid, M, pqlist)
+            hm_measurement = self._calculate_higher_order_moments(psfImage, centroid, M)
         except Exception as e:
             raise measBase.MeasurementError(e)
 
         # Record the moments
         for i in range(len(hm_measurement)):
-            (p, q) = pqlist[i]
+            (p, q) = self.pqlist[i]
             M_pq = hm_measurement[i]
 
-            suffix = self._get_suffix(p, q)
             this_column_name = self.name + f"_{p}{q}"
             record.set(this_column_name, M_pq)

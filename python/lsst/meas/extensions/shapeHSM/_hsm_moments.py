@@ -224,7 +224,9 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
         )
         if config.addFlux:
             self.fluxKey = schema.addField(
-                schema.join(name, "Flux"), type=float, doc="Flux of the source via the HSM shape algorithm"
+                schema.join(name, "Flux"),
+                type=float,
+                doc="Flux of the source via the HSM shape algorithm",
             )
 
     def measure(self, record, exposure):
@@ -407,9 +409,7 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
             # PSF. We therefore reset the origin to be the same as the
             # pixelized image.
             center0 = Point2I(center)
-            xy0 = Point2I(center0.x + psfImage.getX0(),
-                          center0.y + psfImage.getY0()
-                          )
+            xy0 = Point2I(center0.x + psfImage.getX0(), center0.y + psfImage.getY0())
             psfImage.setXY0(xy0)
 
         # Get the trace radius of the PSF.
@@ -575,7 +575,11 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
             # Get the variance image from the exposure and restrict to the
             # PSF bounding box.
             var = afwImage.Image(
-                afwImage.Image(exposure.getMaskedImage().getVariance()[psfImage.getBBox()], dtype=psfImage.dtype, deep=True),
+                afwImage.Image(
+                    exposure.getMaskedImage().getVariance()[psfImage.getBBox()],
+                    dtype=psfImage.dtype,
+                    deep=True,
+                ),
                 bbox=psfImage.getBBox(),
                 origin=afwImage.PARENT,
                 dtype=psfImage.dtype,

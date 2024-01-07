@@ -731,7 +731,7 @@ class PyGaussianPsf(afwDetection.Psf):
     def _doComputeKernelImage(self, position=None, color=None):
         bbox = self.computeBBox(position, color)
         img = afwImage.Image(bbox, dtype=np.float64)
-        x, y = np.ogrid[bbox.minY : bbox.maxY + 1, bbox.minX : bbox.maxX + 1]
+        x, y = np.ogrid[bbox.minY: bbox.maxY + 1, bbox.minX: bbox.maxX + 1]
         rsqr = x**2 + y**2
         img.array[:] = np.exp(-0.5 * rsqr / self.sigma**2)
         img.array /= np.sum(img.array)
@@ -747,7 +747,7 @@ class PyGaussianPsf(afwDetection.Psf):
             # directly, so this inconsistency no longer breaks things.
             bbox.shift(geom.Extent2I(1, 2))
         img = afwImage.Image(bbox, dtype=np.float64)
-        y, x = np.ogrid[float(bbox.minY) : bbox.maxY + 1, bbox.minX : bbox.maxX + 1]
+        y, x = np.ogrid[float(bbox.minY): bbox.maxY + 1, bbox.minX: bbox.maxX + 1]
         x -= position.x - np.floor(position.x + 0.5)
         y -= position.y - np.floor(position.y + 0.5)
         rsqr = x**2 + y**2

@@ -126,26 +126,12 @@ class HsmMomentsPlugin(measBase.SingleFramePlugin):
         try:
             # Attempt to compute HSM moments.
 
-            # Use galsim c++/python interface directly.
-            shape = galsim.hsm.ShapeData(
-                image_bounds=galsim._BoundsI(0, 0, 1, 1),
-                observed_shape=galsim._Shear(0j),
-                psf_shape=galsim._Shear(0j),
-                moments_centroid=galsim._PositionD(0, 0),
-            )
-            hsmparams = galsim.hsm.HSMParams.default
-
-            # TODO: DM-42047 Change to public API when an optimized
-            # version is available.
-            galsim._galsim.FindAdaptiveMomView(
-                shape._data,
-                image._image,
-                weight_image._image,
-                float(sigma),
-                float(precision),
-                guessCentroid._p,
-                bool(self.config.roundMoments),
-                hsmparams._hsmp,
+            galsim.FindAdaptiveMom(
+                image,
+                weight_image,
+                guess_centroid=guessCentroid,
+                guess_sig=sigma,
+                precision=precision,
             )
 
         except RuntimeError as error:

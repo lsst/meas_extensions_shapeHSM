@@ -18,8 +18,8 @@ You can find Jira issues for this module under the `meas_extensions_shapeHSM <ht
 
 .. .. _lsst.meas.extensions.shapeHSM-pyapi:
 
-.. Python API reference
-.. ====================
+Python API reference
+====================
 
-.. .. automodapi:: lsst.meas.extensions.shapeHSM
-..    :no-main-docstr:
+.. automodapi:: lsst.meas.extensions.shapeHSM
+   :no-main-docstr:

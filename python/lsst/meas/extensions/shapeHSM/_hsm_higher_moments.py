@@ -163,6 +163,15 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
         bbox = image.getBBox()
         image_array = image.array
 
+        
+        # Check that the bounding box has non-zero area.
+        if bbox.getArea() == 0:
+            raise measBase.MeasurementError(self.NO_PIXELS.doc, self.NO_PIXELS.number)
+
+        # Ensure that the centroid is within the bounding box.
+        if not bbox.contains(geom.Point2I(center)):
+            raise measBase.MeasurementError(self.NOT_CONTAINED.doc, self.NOT_CONTAINED.number)
+
         y, x = np.mgrid[: image_array.shape[0], : image_array.shape[1]]
 
         if use_linear_algebra:

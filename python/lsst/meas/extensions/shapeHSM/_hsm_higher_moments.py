@@ -163,7 +163,6 @@ class HigherOrderMomentsPlugin(measBase.SingleFramePlugin):
         bbox = image.getBBox()
         image_array = image.array
 
-        
         # Check that the bounding box has non-zero area.
         if bbox.getArea() == 0:
             raise measBase.MeasurementError(self.NO_PIXELS.doc, self.NO_PIXELS.number)

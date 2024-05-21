@@ -290,16 +290,13 @@ class HigherOrderMomentsSourcePlugin(HigherOrderMomentsPlugin):
         badpix = (exposure.mask[bbox].array & bitValue) != 0
 
         # Measure all the moments together to save time
-        try:
-            hm_measurement = self._calculate_higher_order_moments(
-                exposure.image[bbox],
-                center,
-                M,
-                badpix,
-                set_masked_pixels_to_zero=self.config.setMaskedPixelsToZero,
-            )
-        except Exception as e:
-            raise measBase.MeasurementError(e)
+        hm_measurement = self._calculate_higher_order_moments(
+            exposure.image[bbox],
+            center,
+            M,
+            badpix,
+            set_masked_pixels_to_zero=self.config.setMaskedPixelsToZero,
+        )
 
         # Record the moments
         for (p, q), M_pq in hm_measurement.items():
@@ -390,10 +387,7 @@ class HigherOrderMomentsPSFPlugin(HigherOrderMomentsPlugin):
             psfCenter = geom.Point2D(psfBBox.getMin() + psfBBox.getDimensions() // 2)
 
         # Measure all the moments together to save time
-        try:
-            hm_measurement = self._calculate_higher_order_moments(psfImage, psfCenter, M)
-        except Exception as e:
-            raise measBase.MeasurementError(e)
+        hm_measurement = self._calculate_higher_order_moments(psfImage, psfCenter, M)
 
         # Record the moments
         for (p, q), M_pq in hm_measurement.items():

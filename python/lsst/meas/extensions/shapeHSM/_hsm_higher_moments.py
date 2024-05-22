@@ -271,17 +271,25 @@ class HigherOrderMomentsSourcePlugin(HigherOrderMomentsPlugin):
 
     def measure(self, record, exposure):
         # Docstring inherited.
-        M = np.zeros((2, 2))
+
+        # If HsmSourceMoments algorithm failed, then the higher-order moments measurements
+        # would surely fail. Raise MeasurementError and move on.
+        # If HsmSourceMoments algorithm was not run, then higher-order moments measurements
+        # would fail for all entries in the catalog and is fatal.
         try:
-            center = geom.Point2D(
-                record["ext_shapeHSM_HsmSourceMoments_x"],
-                record["ext_shapeHSM_HsmSourceMoments_y"],
-            )
-            M[0, 0] = record["ext_shapeHSM_HsmSourceMoments_xx"]
-            M[1, 1] = record["ext_shapeHSM_HsmSourceMoments_yy"]
-            M[0, 1] = M[1, 0] = record["ext_shapeHSM_HsmSourceMoments_xy"]
+            if record["ext_shapeHSM_HsmSourceMoments_flag"]:
+                raise measBase.MeasurementError(self.FAILURE.doc, self.FAILURE.number)
         except KeyError:
             raise measBase.FatalAlgorithmError("'ext_shapeHSM_HsmSourceMoments' plugin must be enabled.")
+
+        center = geom.Point2D(
+            record["ext_shapeHSM_HsmSourceMoments_x"],
+            record["ext_shapeHSM_HsmSourceMoments_y"],
+        )
+        M = np.zeros((2, 2))
+        M[0, 0] = record["ext_shapeHSM_HsmSourceMoments_xx"]
+        M[1, 1] = record["ext_shapeHSM_HsmSourceMoments_yy"]
+        M[0, 1] = M[1, 0] = record["ext_shapeHSM_HsmSourceMoments_xy"]
 
         # Obtain the bounding box of the source footprint
         bbox = record.getFootprint().getBBox()
@@ -290,16 +298,13 @@ class HigherOrderMomentsSourcePlugin(HigherOrderMomentsPlugin):
         badpix = (exposure.mask[bbox].array & bitValue) != 0
 
         # Measure all the moments together to save time
-        try:
-            hm_measurement = self._calculate_higher_order_moments(
-                exposure.image[bbox],
-                center,
-                M,
-                badpix,
-                set_masked_pixels_to_zero=self.config.setMaskedPixelsToZero,
-            )
-        except Exception as e:
-            raise measBase.MeasurementError(e)
+        hm_measurement = self._calculate_higher_order_moments(
+            exposure.image[bbox],
+            center,
+            M,
+            badpix,
+            set_masked_pixels_to_zero=self.config.setMaskedPixelsToZero,
+        )
 
         # Record the moments
         for (p, q), M_pq in hm_measurement.items():
@@ -361,15 +366,25 @@ class HigherOrderMomentsPSFPlugin(HigherOrderMomentsPlugin):
 
     def measure(self, record, exposure):
         # Docstring inherited.
-        M = np.zeros((2, 2))
+
+        # If the PSF model is not available, this plugin would fail for all entries.
+        if (psf := exposure.getPsf()) is None:
+            raise measBase.FatalAlgorithmError("No PSF attached to the exposure.")
+
+        # If HsmPsfMoments algorithm failed, then the higher-order PSF moments measurements
+        # would surely fail. Raise MeasurementError and move on.
+        # If HsmPsfMoments algorithm was not run, then higher-order PSF moments measurements
+        # would fail for all entries in the catalog and is fatal.
         try:
-            M[0, 0] = record["ext_shapeHSM_HsmPsfMoments_xx"]
-            M[1, 1] = record["ext_shapeHSM_HsmPsfMoments_yy"]
-            M[0, 1] = M[1, 0] = record["ext_shapeHSM_HsmPsfMoments_xy"]
+            if record["ext_shapeHSM_HsmPsfMoments_flag"]:
+                raise measBase.MeasurementError(self.FAILURE.doc, self.FAILURE.number)
         except KeyError:
             raise measBase.FatalAlgorithmError("'ext_shapeHSM_HsmPsfMoments' plugin must be enabled.")
 
-        psf = exposure.getPsf()
+        M = np.zeros((2, 2))
+        M[0, 0] = record["ext_shapeHSM_HsmPsfMoments_xx"]
+        M[1, 1] = record["ext_shapeHSM_HsmPsfMoments_yy"]
+        M[0, 1] = M[1, 0] = record["ext_shapeHSM_HsmPsfMoments_xy"]
 
         centroid = self.centroidExtractor(record, self.flagHandler)
         if self.config.useSourceCentroidOffset:
@@ -390,10 +405,7 @@ class HigherOrderMomentsPSFPlugin(HigherOrderMomentsPlugin):
             psfCenter = geom.Point2D(psfBBox.getMin() + psfBBox.getDimensions() // 2)
 
         # Measure all the moments together to save time
-        try:
-            hm_measurement = self._calculate_higher_order_moments(psfImage, psfCenter, M)
-        except Exception as e:
-            raise measBase.MeasurementError(e)
+        hm_measurement = self._calculate_higher_order_moments(psfImage, psfCenter, M)
 
         # Record the moments
         for (p, q), M_pq in hm_measurement.items():

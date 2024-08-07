@@ -314,7 +314,11 @@ class HsmShapeBjConfig(HsmShapeConfig):
 
     def validate(self):
         if self.shearType != "BJ":
-            raise pexConfig.FieldValidationError(self.shearType, self, "shearType should be set to 'BJ'.")
+            raise pexConfig.FieldValidationError(
+                self.__class__.shearType,
+                self,
+                f"shearType '{self.shearType}' is not valid. It must be 'BJ'.",
+            )
         super().validate()
 
 
@@ -336,7 +340,11 @@ class HsmShapeLinearConfig(HsmShapeConfig):
 
     def validate(self):
         if self.shearType != "LINEAR":
-            raise pexConfig.FieldValidationError(self.shearType, self, "shearType should be set to 'LINEAR'.")
+            raise pexConfig.FieldValidationError(
+                self.__class__.shearType,
+                self,
+                f"shearType '{self.shearType}' is not valid. It must be 'LINEAR'.",
+            )
         super().validate()
 
 
@@ -358,7 +366,11 @@ class HsmShapeKsbConfig(HsmShapeConfig):
 
     def validate(self):
         if self.shearType != "KSB":
-            raise pexConfig.FieldValidationError(self.shearType, self, "shearType should be set to 'KSB'.")
+            raise pexConfig.FieldValidationError(
+                self.__class__.shearType,
+                self,
+                f"shearType '{self.shearType}' is not valid. It must be 'KSB'.",
+            )
         super().validate()
 
 
@@ -381,7 +393,9 @@ class HsmShapeRegaussConfig(HsmShapeConfig):
     def validate(self):
         if self.shearType != "REGAUSS":
             raise pexConfig.FieldValidationError(
-                self.shearType, self, "shearType should be set to 'REGAUSS'."
+                self.__class__.shearType,
+                self,
+                f"shearType '{self.shearType}' is not valid. It must be 'REGAUSS'.",
             )
         super().validate()
 

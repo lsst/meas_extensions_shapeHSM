@@ -67,6 +67,28 @@ class HsmShapeConfig(measBase.SingleFramePluginConfig):
         default=["BAD", "SAT"],
     )
 
+    @property
+    def SHEAR_TYPE(self):
+        """Base class property for the type of shear estimator used.
+
+        It has a getter but no setter, making it read-only. Subclasses can
+        override this property, but it cannot be set externally.
+        """
+        return "REGAUSS"
+
+    def setDefaults(self):
+        super().setDefaults()
+        self.shearType = self.SHEAR_TYPE
+
+    def validate(self):
+        if self.shearType != self.SHEAR_TYPE:
+            raise pexConfig.FieldValidationError(
+                self.__class__.shearType,
+                self,
+                f"shearType '{self.shearType}' is not valid. It must be '{self.SHEAR_TYPE}'.",
+            )
+        super().validate()
+
 
 class HsmShapePlugin(measBase.SingleFramePlugin):
     """Base plugin for HSM shape measurement."""
@@ -308,18 +330,9 @@ class HsmShapePlugin(measBase.SingleFramePlugin):
 class HsmShapeBjConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the BJ estimator."""
 
-    def setDefaults(self):
-        super().setDefaults()
-        self.shearType = "BJ"
-
-    def validate(self):
-        if self.shearType != "BJ":
-            raise pexConfig.FieldValidationError(
-                self.__class__.shearType,
-                self,
-                f"shearType '{self.shearType}' is not valid. It must be 'BJ'.",
-            )
-        super().validate()
+    @property
+    def SHEAR_TYPE(self):
+        return "BJ"
 
 
 @measBase.register("ext_shapeHSM_HsmShapeBj")
@@ -334,18 +347,9 @@ class HsmShapeBjPlugin(HsmShapePlugin):
 class HsmShapeLinearConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the LINEAR estimator."""
 
-    def setDefaults(self):
-        super().setDefaults()
-        self.shearType = "LINEAR"
-
-    def validate(self):
-        if self.shearType != "LINEAR":
-            raise pexConfig.FieldValidationError(
-                self.__class__.shearType,
-                self,
-                f"shearType '{self.shearType}' is not valid. It must be 'LINEAR'.",
-            )
-        super().validate()
+    @property
+    def SHEAR_TYPE(self):
+        return "LINEAR"
 
 
 @measBase.register("ext_shapeHSM_HsmShapeLinear")
@@ -360,18 +364,9 @@ class HsmShapeLinearPlugin(HsmShapePlugin):
 class HsmShapeKsbConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the KSB estimator."""
 
-    def setDefaults(self):
-        super().setDefaults()
-        self.shearType = "KSB"
-
-    def validate(self):
-        if self.shearType != "KSB":
-            raise pexConfig.FieldValidationError(
-                self.__class__.shearType,
-                self,
-                f"shearType '{self.shearType}' is not valid. It must be 'KSB'.",
-            )
-        super().validate()
+    @property
+    def SHEAR_TYPE(self):
+        return "KSB"
 
 
 @measBase.register("ext_shapeHSM_HsmShapeKsb")
@@ -386,18 +381,9 @@ class HsmShapeKsbPlugin(HsmShapePlugin):
 class HsmShapeRegaussConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the REGAUSS estimator."""
 
-    def setDefaults(self):
-        super().setDefaults()
-        self.shearType = "REGAUSS"
-
-    def validate(self):
-        if self.shearType != "REGAUSS":
-            raise pexConfig.FieldValidationError(
-                self.__class__.shearType,
-                self,
-                f"shearType '{self.shearType}' is not valid. It must be 'REGAUSS'.",
-            )
-        super().validate()
+    @property
+    def SHEAR_TYPE(self):
+        return "REGAUSS"
 
 
 @measBase.register("ext_shapeHSM_HsmShapeRegauss")

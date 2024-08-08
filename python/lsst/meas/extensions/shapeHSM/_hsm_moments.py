@@ -315,7 +315,7 @@ class HsmSourceMomentsRoundConfig(HsmSourceMomentsConfig):
     def validate(self):
         if not self.roundMoments:
             raise pexConfig.FieldValidationError(
-                self.roundMoments, self, "roundMoments should be set to `True`."
+                self.__class__.roundMoments, self, "roundMoments should be set to `True`."
             )
         super().validate()
 

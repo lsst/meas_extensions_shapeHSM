@@ -255,6 +255,16 @@ class MomentsTestCase(unittest.TestCase):
 
         return source
 
+    def testValidateHsmSourceMomentsRoundConfig(self):
+        algorithmName = "ext_shapeHSM_HsmSourceMomentsRound"
+        msConfig = base.SingleFrameMeasurementConfig()
+        msConfig.plugins.names |= [algorithmName]
+        control = msConfig.plugins[algorithmName]
+        control.validate()  # This should not raise any error.
+        with self.assertRaises(pexConfig.FieldValidationError):
+            control.roundMoments = False
+            control.validate()
+
     def testHsmSourceMoments(self):
         for i, imageid in enumerate(file_indices):
             source = self.runMeasurement(
@@ -713,15 +723,22 @@ class ShapeTestCase(unittest.TestCase):
         self.assertEqual(resolutionDirect, resolutionHSM)
         self.assertEqual(flagsDirect, flagsHSM)
 
-    def testValidate(self):
+    def testValidateHsmShapeConfig(self):
         for algName in correction_methods:
-            with self.assertRaises(pexConfig.FieldValidationError):
-                algorithmName = "ext_shapeHSM_HsmShape" + algName[0:1].upper() + algName[1:].lower()
-                msConfig = base.SingleFrameMeasurementConfig()
-                msConfig.plugins.names |= [algorithmName]
-                control = msConfig.plugins[algorithmName]
-                control.shearType = "WRONG"
-                control.validate()
+            algorithmName = "ext_shapeHSM_HsmShape" + algName[0:1].upper() + algName[1:].lower()
+            msConfig = base.SingleFrameMeasurementConfig()
+            msConfig.plugins.names |= [algorithmName]
+            control = msConfig.plugins[algorithmName]
+            for shearType in correction_methods:
+                control.shearType = shearType
+                if shearType == algName:
+                    # This should not raise any error.
+                    control.validate()
+                else:
+                    with self.assertRaises(pexConfig.FieldValidationError):
+                        # This should raise an error because the overriden
+                        # shear type is anything but the intended one.
+                        control.validate()
 
 
 class PyGaussianPsf(afwDetection.Psf):

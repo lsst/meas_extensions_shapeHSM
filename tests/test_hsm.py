@@ -730,14 +730,17 @@ class ShapeTestCase(unittest.TestCase):
             msConfig.plugins.names |= [algorithmName]
             control = msConfig.plugins[algorithmName]
             for shearType in correction_methods:
+                # Ensure SHEAR_TYPE is immutable.
+                with self.assertRaises(AttributeError):
+                    control.SHEAR_TYPE = shearType
+                # Verify that shearType is properly validated when set.
                 control.shearType = shearType
                 if shearType == algName:
-                    # This should not raise any error.
+                    # Pass when shearType matches the intended value.
                     control.validate()
                 else:
+                    # Fail when shearType does not match the intended value.
                     with self.assertRaises(pexConfig.FieldValidationError):
-                        # This should raise an error because the overriden
-                        # shear type is anything but the intended one.
                         control.validate()
 
 

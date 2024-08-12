@@ -26,6 +26,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
+from deprecated.sphinx import deprecated
 from lsst.geom import Point2I
 
 __all__ = [
@@ -43,20 +44,6 @@ __all__ = [
 class HsmShapeConfig(measBase.SingleFramePluginConfig):
     """Base configuration for HSM shape measurement."""
 
-    shearType = pexConfig.ChoiceField[str](
-        doc=(
-            "The desired method of PSF correction using GalSim. The first three options return an e-type "
-            "distortion, whereas the last option returns a g-type shear."
-        ),
-        allowed={
-            "REGAUSS": "Regaussianization method from Hirata & Seljak (2003)",
-            "LINEAR": "A modification by Hirata & Seljak (2003) of methods in Bernstein & Jarvis (2002)",
-            "BJ": "From Bernstein & Jarvis (2002)",
-            "KSB": "From Kaiser, Squires, & Broadhurst (1995)",
-        },
-        default="REGAUSS",
-    )
-
     deblendNChild = pexConfig.Field[str](
         doc="Field name for number of deblend children.",
         default="",
@@ -68,26 +55,35 @@ class HsmShapeConfig(measBase.SingleFramePluginConfig):
     )
 
     @property
-    def SHEAR_TYPE(self):
-        """Base class property for the type of shear estimator used.
+    def shearType(self):
+        """Base class property for the desired method of PSF correction.
 
-        It has a getter but no setter, making it read-only. Subclasses can
-        override this property, but it cannot be set externally.
+        The following options are available through GalSim. The first three
+        options return an e-type distortion, whereas the last option returns a
+        g-type shear:
+
+        - "REGAUSS": Regaussianization method from Hirata & Seljak (2003).
+        - "LINEAR": A modification by Hirata & Seljak (2003) of methods in
+          Bernstein & Jarvis (2002).
+        - "BJ": The method developed by Bernstein & Jarvis (2002).
+        - "KSB": The method from Kaiser, Squires, & Broadhurst (1995).
+
+        The default method is "REGAUSS". Subclasses can override this property,
+        but it cannot be set externally, making it effectively read-only. The
+        setter is deprecated and will not do anything other than emit a
+        deprecation warning.
         """
         return "REGAUSS"
 
-    def setDefaults(self):
-        super().setDefaults()
-        self.shearType = self.SHEAR_TYPE
-
-    def validate(self):
-        if self.shearType != self.SHEAR_TYPE:
-            raise pexConfig.FieldValidationError(
-                self.__class__.shearType,
-                self,
-                f"shearType '{self.shearType}' is not valid. It must be '{self.SHEAR_TYPE}'.",
-            )
-        super().validate()
+    # Remove in DM-45721.
+    @shearType.setter
+    @deprecated(
+        reason="The shearType setter is deprecated. Will be removed after v28.",
+        version="v28.0",
+        category=FutureWarning,
+    )
+    def shearType(self, value):
+        pass  # Do nothing, just emit a deprecation warning.
 
 
 class HsmShapePlugin(measBase.SingleFramePlugin):
@@ -330,8 +326,9 @@ class HsmShapePlugin(measBase.SingleFramePlugin):
 class HsmShapeBjConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the BJ estimator."""
 
-    @property
-    def SHEAR_TYPE(self):
+    @HsmShapeConfig.shearType.getter
+    def shearType(self):
+        # Docstring inherited.
         return "BJ"
 
 
@@ -347,8 +344,9 @@ class HsmShapeBjPlugin(HsmShapePlugin):
 class HsmShapeLinearConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the LINEAR estimator."""
 
-    @property
-    def SHEAR_TYPE(self):
+    @HsmShapeConfig.shearType.getter
+    def shearType(self):
+        # Docstring inherited.
         return "LINEAR"
 
 
@@ -364,8 +362,9 @@ class HsmShapeLinearPlugin(HsmShapePlugin):
 class HsmShapeKsbConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the KSB estimator."""
 
-    @property
-    def SHEAR_TYPE(self):
+    @HsmShapeConfig.shearType.getter
+    def shearType(self):
+        # Docstring inherited.
         return "KSB"
 
 
@@ -381,8 +380,9 @@ class HsmShapeKsbPlugin(HsmShapePlugin):
 class HsmShapeRegaussConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the REGAUSS estimator."""
 
-    @property
-    def SHEAR_TYPE(self):
+    @HsmShapeConfig.shearType.getter
+    def shearType(self):
+        # Docstring inherited.
         return "REGAUSS"
 
 

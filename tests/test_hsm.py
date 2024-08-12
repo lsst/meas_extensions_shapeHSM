@@ -723,25 +723,19 @@ class ShapeTestCase(unittest.TestCase):
         self.assertEqual(resolutionDirect, resolutionHSM)
         self.assertEqual(flagsDirect, flagsHSM)
 
-    def testValidateHsmShapeConfig(self):
+    def testHsmShapeConfig(self):
         for algName in correction_methods:
             algorithmName = "ext_shapeHSM_HsmShape" + algName[0:1].upper() + algName[1:].lower()
             msConfig = base.SingleFrameMeasurementConfig()
             msConfig.plugins.names |= [algorithmName]
             control = msConfig.plugins[algorithmName]
+            # Remove in DM-45721.
             for shearType in correction_methods:
-                # Ensure SHEAR_TYPE is immutable.
-                with self.assertRaises(AttributeError):
-                    control.SHEAR_TYPE = shearType
-                # Verify that shearType is properly validated when set.
+                # Verify that the setter method for control.shearType is a
+                # no-op for backwards compatibility, meaning it doesn't change
+                # the value in the config, regardless of what value you set.
                 control.shearType = shearType
-                if shearType == algName:
-                    # Pass when shearType matches the intended value.
-                    control.validate()
-                else:
-                    # Fail when shearType does not match the intended value.
-                    with self.assertRaises(pexConfig.FieldValidationError):
-                        control.validate()
+                self.assertEqual(control.shearType, algName)
 
 
 class PyGaussianPsf(afwDetection.Psf):

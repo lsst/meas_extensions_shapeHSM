@@ -68,12 +68,10 @@ class HsmShapeConfig(measBase.SingleFramePluginConfig):
         - "BJ": The method developed by Bernstein & Jarvis (2002).
         - "KSB": The method from Kaiser, Squires, & Broadhurst (1995).
 
-        The default method is "REGAUSS". Subclasses can override this property,
-        but it cannot be set externally, making it effectively read-only. The
-        setter is deprecated and will not do anything other than emit a
-        deprecation warning.
+        Subclasses can override this property, but it cannot be set externally,
+        making it effectively read-only.
         """
-        return "REGAUSS"
+        raise NotImplementedError("The shearType property must be implemented in subclasses.")
 
     # Remove in DM-45721.
     @shearType.setter

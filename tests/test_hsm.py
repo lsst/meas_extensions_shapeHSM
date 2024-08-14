@@ -723,17 +723,28 @@ class ShapeTestCase(unittest.TestCase):
         self.assertEqual(resolutionDirect, resolutionHSM)
         self.assertEqual(flagsDirect, flagsHSM)
 
-    def testHsmShapeConfig(self):
-        for algName in correction_methods:
-            algorithmName = "ext_shapeHSM_HsmShape" + algName[0:1].upper() + algName[1:].lower()
+    @lsst.utils.tests.methodParametersProduct(
+        registerAllShapePlugins=(True, False),
+    )
+    def testHsmShapeConfig(self, registerAllShapePlugins=False):
+        if registerAllShapePlugins:
             msConfig = base.SingleFrameMeasurementConfig()
-            msConfig.plugins.names |= [algorithmName]
+            msConfig.plugins.names |= [
+                "ext_shapeHSM_HsmShape" + algName.capitalize() for algName in correction_methods
+            ]
+
+        for algName in correction_methods:
+            algorithmName = "ext_shapeHSM_HsmShape" + algName.capitalize()
+            if not registerAllShapePlugins:
+                msConfig = base.SingleFrameMeasurementConfig()
+                msConfig.plugins.names |= [algorithmName]
             control = msConfig.plugins[algorithmName]
-            # Remove in DM-45721.
+
+            # Remove in DM-45721:
+            # Verify that the setter method for control.shearType is a no-op
+            # for backwards compatibility, meaning it doesn't change the value
+            # in the config, regardless of what shear type you set it to.
             for shearType in correction_methods:
-                # Verify that the setter method for control.shearType is a
-                # no-op for backwards compatibility, meaning it doesn't change
-                # the value in the config, regardless of what value you set.
                 control.shearType = shearType
                 self.assertEqual(control.shearType, algName)
 

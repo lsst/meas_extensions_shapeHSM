@@ -41,6 +41,17 @@ __all__ = [
 ]
 
 
+def inherit_prop_docs(cls):
+    """Decorator to inherit docstrings for properties from base classes."""
+    for name in dir(cls):
+        attr = getattr(cls, name, None)
+        if isinstance(attr, property):
+            base_prop = getattr(cls.__bases__[0], name, None)
+            if isinstance(base_prop, property) and attr.__doc__ is None:
+                attr.__doc__ = base_prop.__doc__
+    return cls
+
+
 class HsmShapeConfig(measBase.SingleFramePluginConfig):
     """Base configuration for HSM shape measurement."""
 
@@ -321,6 +332,7 @@ class HsmShapePlugin(measBase.SingleFramePlugin):
             )
 
 
+@inherit_prop_docs
 class HsmShapeBjConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the BJ estimator."""
 
@@ -339,6 +351,7 @@ class HsmShapeBjPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Bernstein & Jarvis (2002) method"
 
 
+@inherit_prop_docs
 class HsmShapeLinearConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the LINEAR estimator."""
 
@@ -357,6 +370,7 @@ class HsmShapeLinearPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Hirata & Seljak (2003) 'linear' method"
 
 
+@inherit_prop_docs
 class HsmShapeKsbConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the KSB estimator."""
 
@@ -375,6 +389,7 @@ class HsmShapeKsbPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Kaiser, Squires, & Broadhurst (1995) method"
 
 
+@inherit_prop_docs
 class HsmShapeRegaussConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the REGAUSS estimator."""
 

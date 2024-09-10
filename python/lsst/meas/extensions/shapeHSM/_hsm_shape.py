@@ -41,15 +41,12 @@ __all__ = [
 ]
 
 
-def inherit_prop_docs(cls):
-    """Decorator to inherit docstrings for properties from base classes."""
-    for name in dir(cls):
-        attr = getattr(cls, name, None)
-        if isinstance(attr, property):
-            base_prop = getattr(cls.__bases__[0], name, None)
-            if isinstance(base_prop, property) and attr.__doc__ is None:
-                attr.__doc__ = base_prop.__doc__
-    return cls
+def inherit_doc(ref_class):
+    def decorator(func):
+        func.__doc__ = getattr(ref_class, func.__name__).__doc__
+        return func
+
+    return decorator
 
 
 class HsmShapeConfig(measBase.SingleFramePluginConfig):
@@ -332,11 +329,11 @@ class HsmShapePlugin(measBase.SingleFramePlugin):
             )
 
 
-@inherit_prop_docs
 class HsmShapeBjConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the BJ estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "BJ"
@@ -351,11 +348,11 @@ class HsmShapeBjPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Bernstein & Jarvis (2002) method"
 
 
-@inherit_prop_docs
 class HsmShapeLinearConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the LINEAR estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "LINEAR"
@@ -370,11 +367,11 @@ class HsmShapeLinearPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Hirata & Seljak (2003) 'linear' method"
 
 
-@inherit_prop_docs
 class HsmShapeKsbConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the KSB estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "KSB"
@@ -389,11 +386,11 @@ class HsmShapeKsbPlugin(HsmShapePlugin):
     doc = "PSF-corrected shear using Kaiser, Squires, & Broadhurst (1995) method"
 
 
-@inherit_prop_docs
 class HsmShapeRegaussConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the REGAUSS estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "REGAUSS"

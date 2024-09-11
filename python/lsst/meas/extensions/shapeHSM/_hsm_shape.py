@@ -41,6 +41,14 @@ __all__ = [
 ]
 
 
+def inherit_doc(ref_class):
+    def decorator(func):
+        func.__doc__ = getattr(ref_class, func.__name__).__doc__
+        return func
+
+    return decorator
+
+
 class HsmShapeConfig(measBase.SingleFramePluginConfig):
     """Base configuration for HSM shape measurement."""
 
@@ -325,6 +333,7 @@ class HsmShapeBjConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the BJ estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "BJ"
@@ -343,6 +352,7 @@ class HsmShapeLinearConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the LINEAR estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "LINEAR"
@@ -361,6 +371,7 @@ class HsmShapeKsbConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the KSB estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "KSB"
@@ -379,6 +390,7 @@ class HsmShapeRegaussConfig(HsmShapeConfig):
     """Configuration for HSM shape measurement for the REGAUSS estimator."""
 
     @HsmShapeConfig.shearType.getter
+    @inherit_doc(HsmShapeConfig)
     def shearType(self):
         # Docstring inherited.
         return "REGAUSS"

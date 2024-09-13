@@ -22,6 +22,7 @@
 
 """lsst.meas.extensions.shapeHSM
 """
+from ._configure import *
 from ._hsm_higher_moments import *
 from ._hsm_moments import *
 from ._hsm_shape import *

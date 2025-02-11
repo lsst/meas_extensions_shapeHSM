@@ -122,33 +122,24 @@ class HsmMomentsPlugin(measBase.SingleFramePlugin):
             Raised for errors in measurement.
         """
         # Convert centroid to GalSim's PositionD type.
+        # NOTE: Using _PositionD skips some sanity checks and argument parsing
+        # of the public PositionD class.
         guessCentroid = galsim._PositionD(centroid.x, centroid.y)
         try:
             # Attempt to compute HSM moments.
-
-            # Use galsim c++/python interface directly.
-            shape = galsim.hsm.ShapeData(
-                image_bounds=galsim._BoundsI(0, 0, 1, 1),
-                observed_shape=galsim._Shear(0j),
-                psf_shape=galsim._Shear(0j),
-                moments_centroid=galsim._PositionD(0, 0),
+            shape = galsim.hsm.FindAdaptiveMom(
+                image,
+                weight=weight_image,
+                badpix=None,  # Already incorporated into `weight_image`.
+                guess_sig=sigma,
+                precision=precision,
+                guess_centroid=guessCentroid,
+                strict=True,  # Raises GalSimHSMError if estimation fails.
+                check=False,  # Setting this to True slows down the code!
+                round_moments=self.config.roundMoments,
+                hsmparams=None,
             )
-            hsmparams = galsim.hsm.HSMParams.default
-
-            # TODO: DM-42047 Change to public API when an optimized
-            # version is available.
-            galsim._galsim.FindAdaptiveMomView(
-                shape._data,
-                image._image,
-                weight_image._image,
-                float(sigma),
-                float(precision),
-                guessCentroid._p,
-                bool(self.config.roundMoments),
-                hsmparams._hsmp,
-            )
-
-        except RuntimeError as error:
+        except galsim.GalSimHSMError as error:
             raise measBase.MeasurementError(str(error), self.GALSIM.number)
 
         # Retrieve computed moments sigma and centroid.
@@ -430,7 +421,7 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
 
         # Adjust the psfImage for noise as needed, and retrieve the mask of bad
         # pixels.
-        badpix = self._adjustNoise(psfImage, psfBBox, exposure, record, bounds)
+        badpix = self._adjustNoise(psfImage, psfBBox, exposure, record)
 
         # Extract the numpy array underlying the PSF image.
         imageArray = psfImage.array
@@ -513,7 +504,6 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
         psfBBox: Box2I,
         exposure: afwImage.Exposure,
         record: afwTable.SourceRecord,
-        bounds: galsim.bounds.BoundsI,
     ) -> np.ndarray:
         """
         Adjusts noise in the PSF image and updates the bad pixel mask based on
@@ -532,8 +522,6 @@ class HsmPsfMomentsDebiasedPlugin(HsmPsfMomentsPlugin):
         record : `~lsst.afw.table.SourceRecord`
             The source record where measurement outputs will be stored. May be
             modified in place to set flags.
-        bounds : `~galsim.bounds.BoundsI`
-            The bounding box of the PSF as a GalSim bounds object.
 
         Returns
         -------

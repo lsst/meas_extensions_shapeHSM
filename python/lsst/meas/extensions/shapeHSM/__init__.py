@@ -20,8 +20,7 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""lsst.meas.extensions.shapeHSM
-"""
+"""lsst.meas.extensions.shapeHSM"""
 from ._configure import *
 from ._hsm_higher_moments import *
 from ._hsm_moments import *

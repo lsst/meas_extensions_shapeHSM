@@ -262,44 +262,30 @@ class HsmShapePlugin(measBase.SingleFramePlugin):
         stat = afwMath.makeStatistics(variance, subMask, afwMath.MEDIAN, sctrl)
         skyvar = stat.getValue(afwMath.MEDIAN)
 
-        # Initialize an instance of ShapeData to store the results.
-        shape = galsim.hsm.ShapeData(
-            image_bounds=galsim._BoundsI(0, 0, 1, 1),
-            observed_shape=galsim._Shear(0j),
-            psf_shape=galsim._Shear(0j),
-            moments_centroid=galsim._PositionD(0, 0),
-        )
-
-        # Prepare various values for the GalSim's EstimateShearView call.
+        # Prepare various values for the GalSim's EstimateShear call.
         recomputeFlux = "FIT"
         precision = 1.0e-6
         guessCentroid = galsim._PositionD(center.getX(), center.getY())
-        hsmparams = galsim.hsm.HSMParams.default
 
-        # Directly use GalSim's C++/Python interface for shear estimation.
         try:
-            # Estimate shear using GalSim. Arguments are passed positionally
-            # to the C++ function. Inline comments specify the Python layer
-            # equivalent of each argument for clarity.
-            # TODO: [DM-42047] Change to public API when an optimized version
-            # is available.
-            galsim._galsim.EstimateShearView(
-                shape._data,  # shape data buffer (not passed in pure Python)
-                image._image,  # gal_image
-                psf._image,  # PSF_image
-                weight._image,  # weight
-                float(skyvar),  # sky_var
-                self.config.shearType.upper(),  # shear_est
-                recomputeFlux.upper(),  # recompute_flux
-                float(2.5 * psfSigma),  # guess_sig_gal
-                float(psfSigma),  # guess_sig_PSF
-                float(precision),  # precision
-                guessCentroid._p,  # guess_centroid
-                hsmparams._hsmp,  # hsmparams
+            # Estimate shear using GalSim.
+            shape = galsim.hsm.EstimateShear(
+                image,
+                psf,
+                weight=weight,
+                badpix=None,  # Already incorporated into `weight_image`.
+                sky_var=skyvar,
+                shear_est=self.config.shearType.upper(),
+                recompute_flux=recomputeFlux.upper(),
+                guess_sig_gal=2.5 * psfSigma,
+                guess_sig_PSF=psfSigma,
+                precision=precision,
+                guess_centroid=guessCentroid,
+                strict=True,  # Raises GalSimHSMError if estimation fails.
+                check=False,  # This speeds up the code!
+                hsmparams=None,
             )
-        # GalSim does not raise custom pybind errors as of v2.5, resulting in
-        # all GalSim C++ errors being RuntimeErrors.
-        except (galsim.hsm.GalSimHSMError, RuntimeError) as error:
+        except galsim.hsm.GalSimHSMError as error:
             raise measBase.MeasurementError(str(error), self.GALSIM.number)
 
         # Set ellipticity and error values based on measurement type.

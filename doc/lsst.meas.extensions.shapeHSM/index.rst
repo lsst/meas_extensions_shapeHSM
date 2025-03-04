@@ -7,6 +7,9 @@ lsst.meas.extensions.shapeHSM
 #############################
 
 The ``lsst.meas.extensions.shapeHSM`` module provides algorithms for HSM shape measurement.
+The algorithm was initially described in `Hirata & Seljak (2003) <https://ui.adsabs.harvard.edu/abs/2003MNRAS.343..459H/abstract>`_, and was modified later in `Mandelbaum et al. (2005) <https://ui.adsabs.harvard.edu/abs/2005MNRAS.361.1287M/abstract>`_.
+HSM is named after the primary authors: Christopher Hirata, Uros Seljak, and Rachel Mandelbaum.
+Their implementation of this algorithm lives within `GalSim <https://github.com/GalSim-developers/GalSim>`_, and this package interacts with the Python layer of GalSim to make the measurements.
 
 .. _lsst.meas.extensions.shapeHSM-contributing:
 

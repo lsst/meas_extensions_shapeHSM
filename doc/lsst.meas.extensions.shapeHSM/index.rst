@@ -11,6 +11,17 @@ The algorithm was initially described in `Hirata & Seljak (2003) <https://ui.ads
 HSM is named after the primary authors: Christopher Hirata, Uros Seljak, and Rachel Mandelbaum.
 Their implementation of this algorithm lives within `GalSim <https://github.com/GalSim-developers/GalSim>`_, and this package interacts with the Python layer of GalSim to make the measurements.
 
+Using lsst.meas.extensions.shapeHSM
+===================================
+
+.. toctree linking to topics related to using the module's APIs.
+
+.. toctree::
+   :maxdepth: 1
+
+   hsm-moments
+   hsm-shape
+
 .. _lsst.meas.extensions.shapeHSM-contributing:
 
 Contributing

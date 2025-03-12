@@ -26,7 +26,6 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
-from deprecated.sphinx import deprecated
 from lsst.geom import Point2I
 
 __all__ = [
@@ -80,16 +79,6 @@ class HsmShapeConfig(measBase.SingleFramePluginConfig):
         making it effectively read-only.
         """
         raise NotImplementedError("The shearType property must be implemented in subclasses.")
-
-    # Remove in DM-45721.
-    @shearType.setter
-    @deprecated(
-        reason="The shearType setter is deprecated. Will be removed after v28.",
-        version="v28.0",
-        category=FutureWarning,
-    )
-    def shearType(self, value):
-        pass  # Do nothing, just emit a deprecation warning.
 
 
 class HsmShapePlugin(measBase.SingleFramePlugin):

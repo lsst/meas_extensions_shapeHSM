@@ -740,13 +740,12 @@ class ShapeTestCase(unittest.TestCase):
                 msConfig.plugins.names |= [algorithmName]
             control = msConfig.plugins[algorithmName]
 
-            # Remove in DM-45721:
-            # Verify that the setter method for control.shearType is a no-op
-            # for backwards compatibility, meaning it doesn't change the value
-            # in the config, regardless of what shear type you set it to.
+            # Ensure that 'shearType' is not settable under any circumstances,
+            # i.e., expect AttributeError when trying to set it.
             for shearType in correction_methods:
-                control.shearType = shearType
                 self.assertEqual(control.shearType, algName)
+                with self.assertRaises(AttributeError):
+                    control.shearType = shearType
 
 
 class PyGaussianPsf(afwDetection.Psf):

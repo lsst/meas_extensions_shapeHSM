@@ -30,6 +30,7 @@ import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
 import numpy as np
 from lsst.geom import Box2I, Point2D, Point2I
+from lsst.meas.base import colorExtractor
 from lsst.pex.exceptions import InvalidParameterError, NotFoundError
 
 __all__ = [
@@ -243,6 +244,7 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
         """
         # Extract the centroid from the record.
         center = self.centroidExtractor(record, self.flagHandler)
+        color = colorExtractor(record)
 
         # Get the bounding box of the source's footprint.
         bbox = record.getFootprint().getBBox()
@@ -256,7 +258,7 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
             raise measBase.MeasurementError(self.NOT_CONTAINED.doc, self.NOT_CONTAINED.number)
 
         # Get the trace radius of the PSF.
-        psfSigma = exposure.getPsf().computeShape(center).getTraceRadius()
+        psfSigma = exposure.getPsf().computeShape(center, color).getTraceRadius()
 
         # Turn bounding box corners into GalSim bounds.
         xmin, xmax = bbox.getMinX(), bbox.getMaxX()
@@ -385,6 +387,7 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
         """
         # Extract the centroid from the record.
         center = self.centroidExtractor(record, self.flagHandler)
+        color = colorExtractor(record)
 
         # Retrieve the PSF from the exposure.
         psf = exposure.getPsf()
@@ -394,15 +397,15 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
             raise measBase.MeasurementError(self.NO_PSF.doc, self.NO_PSF.number)
 
         # Get the bounding box of the PSF.
-        psfBBox = psf.computeImageBBox(center)
+        psfBBox = psf.computeImageBBox(center, color)
 
         # Two methods for getting PSF image evaluated at the source centroid:
         if self.config.useSourceCentroidOffset:
             # 1. Using `computeImage()` returns an image in the same coordinate
             # system as the pixelized image.
-            psfImage = psf.computeImage(center)
+            psfImage = psf.computeImage(center, color)
         else:
-            psfImage = psf.computeKernelImage(center)
+            psfImage = psf.computeKernelImage(center, color)
             # 2. Using `computeKernelImage()` to return an image does not
             # retain any information about the original bounding box of the
             # PSF. We therefore reset the origin to be the same as the
@@ -410,7 +413,7 @@ class HsmPsfMomentsPlugin(HsmMomentsPlugin):
             psfImage.setXY0(psfBBox.getMin())
 
         # Get the trace radius of the PSF.
-        psfSigma = psf.computeShape(center).getTraceRadius()
+        psfSigma = psf.computeShape(center, color).getTraceRadius()
 
         # Get the bounding box in the parent coordinate system.
         bbox = psfImage.getBBox(afwImage.PARENT)

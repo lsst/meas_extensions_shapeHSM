@@ -51,6 +51,8 @@ class HsmMomentsConfig(measBase.SingleFramePluginConfig):
     roundMoments = pexConfig.Field[bool](doc="Use round weight function?", default=False)
     addFlux = pexConfig.Field[bool](doc="Store measured flux?", default=False)
     subtractCenter = pexConfig.Field[bool](doc="Subtract starting center from x/y outputs?", default=False)
+    usePsfStampSize = pexConfig.Field[bool](doc="Use the Psf Stamp size to do apple to apple comp.", default=False)
+    print('PF: ', usePsfStampSize)
 
 
 class HsmMomentsPlugin(measBase.SingleFramePlugin):
@@ -224,6 +226,8 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
             self.fluxKey = schema.addField(
                 schema.join(name, "Flux"), type=float, doc="Flux of the source via the HSM shape algorithm"
             )
+        if config.usePsfStampSize:
+            print('GERARD')
 
     def measure(self, record, exposure):
         """
@@ -263,6 +267,10 @@ class HsmSourceMomentsPlugin(HsmMomentsPlugin):
         # Turn bounding box corners into GalSim bounds.
         xmin, xmax = bbox.getMinX(), bbox.getMaxX()
         ymin, ymax = bbox.getMinY(), bbox.getMaxY()
+        if self.config.usePsfStampSize:
+            print(xmax-xmin, ymax-ymin)
+        else:
+            print('NOP')
         bounds = galsim._BoundsI(xmin, xmax, ymin, ymax)
 
         # Get the `lsst.meas.base` mask for bad pixels.
